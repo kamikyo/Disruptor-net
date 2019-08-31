@@ -11,7 +11,7 @@ namespace Disruptor.Tests
         [Test]
         public void ShouldTimeoutWaitFor()
         {
-            var sequenceBarrier = new DummySequenceBarrier();
+            var alert = new DummySequenceBarrierAlert();
 
             var theTimeout = TimeSpan.FromMilliseconds(500);
             var waitStrategy = new LiteTimeoutBlockingWaitStrategy(theTimeout);
@@ -20,7 +20,7 @@ namespace Disruptor.Tests
 
             var stopwatch = Stopwatch.StartNew();
 
-            Assert.Throws<TimeoutException>(() => waitStrategy.WaitFor(6, cursor, dependent, sequenceBarrier));
+            Assert.Throws<TimeoutException>(() => waitStrategy.WaitFor(6, cursor, dependent, alert));
 
             stopwatch.Stop();
 

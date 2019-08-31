@@ -28,7 +28,7 @@
         bool IsAlerted { get; }
 
         /// <summary>
-        ///  Alert the <see cref="IEventProcessor"/> of a status change and stay in this status until cleared.
+        /// Alert the <see cref="IEventProcessor"/> of a status change and stay in this status until cleared.
         /// </summary>
         void Alert();
 
@@ -36,12 +36,5 @@
         /// Clear the current alert status.
         /// </summary>
         void ClearAlert();
-
-        /// <summary>
-        /// Check if an alert has been raised and throw an <see cref="AlertException"/> if it has.
-        /// </summary>
-        /// <exception cref="AlertException">if alert has been raised.</exception>
-        void CheckAlert();
     }
 }
-

@@ -67,7 +67,7 @@ namespace Disruptor
         /// <summary>
         /// <see cref="IWaitStrategy.WaitFor"/>
         /// </summary>
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, ISequenceBarrier barrier)
+        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
             long startTime = 0;
             int counter = _spinTries;
@@ -89,7 +89,7 @@ namespace Disruptor
                         var timeDelta = GetSystemTimeTicks() - startTime;
                         if (timeDelta > _yieldTimeoutTicks)
                         {
-                            return _fallbackStrategy.WaitFor(sequence, cursor, dependentSequence, barrier);
+                            return _fallbackStrategy.WaitFor(sequence, cursor, dependentSequence, alert);
                         }
 
                         if (timeDelta > _spinTimeoutTicks)

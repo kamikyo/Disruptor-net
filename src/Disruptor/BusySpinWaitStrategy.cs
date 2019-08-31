@@ -11,13 +11,13 @@
         /// <summary>
         /// <see cref="IWaitStrategy.WaitFor"/>
         /// </summary>
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, ISequenceBarrier barrier)
+        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
             long availableSequence;
 
             while ((availableSequence = dependentSequence.Value) < sequence)
             {
-                barrier.CheckAlert();
+                alert.Check();
             }
 
             return availableSequence;

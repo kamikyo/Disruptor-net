@@ -13,22 +13,16 @@ namespace Disruptor
         private const int _spinTries = 100;
 
         /// <summary>
-        /// Wait for the given sequence to be available
-        /// <para>This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.</para>
+        /// <see cref="IWaitStrategy.WaitFor"/>
         /// </summary>
-        /// <param name="sequence">sequence to be waited on.</param>
-        /// <param name="cursor">Ring buffer cursor on which to wait.</param>
-        /// <param name="dependentSequence">dependents further back the chain that must advance first</param>
-        /// <param name="barrier">barrier the <see cref="IEventProcessor"/> is waiting on.</param>
-        /// <returns>the sequence that is available which may be greater than the requested sequence.</returns>
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, ISequenceBarrier barrier)
+        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
             long availableSequence;
             var counter = _spinTries;
 
             while ((availableSequence = dependentSequence.Value) < sequence)
             {
-                counter = ApplyWaitMethod(barrier, counter);
+                counter = ApplyWaitMethod(alert, counter);
             }
 
             return availableSequence;
@@ -41,11 +35,11 @@ namespace Disruptor
         {
         }
 
-        private static int ApplyWaitMethod(ISequenceBarrier barrier, int counter)
+        private static int ApplyWaitMethod(SequenceBarrierAlert alert, int counter)
         {
-            barrier.CheckAlert();
+            alert.Check();
 
-            if(counter == 0)
+            if (counter == 0)
             {
                 Thread.Yield();
             }

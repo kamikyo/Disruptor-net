@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace Disruptor
 {
     /// <summary>
@@ -19,22 +17,25 @@ namespace Disruptor
 
         private readonly ISequence _dependentSequence;
         private readonly Sequence _cursorSequence;
-        private volatile bool _alerted;
+        private readonly ActivatableSequenceBarrierAlert _alert;
 
         public ProcessingSequenceBarrier(TSequencer sequencer, TWaitStrategy waitStrategy, Sequence cursorSequence, ISequence[] dependentSequences)
         {
             _sequencer = sequencer;
             _waitStrategy = waitStrategy;
             _cursorSequence = cursorSequence;
-
             _dependentSequence = 0 == dependentSequences.Length ? (ISequence)cursorSequence : new FixedSequenceGroup(dependentSequences);
+            _alert = new ActivatableSequenceBarrierAlert(this);
         }
+
+        public long Cursor => _dependentSequence.Value;
+        public bool IsAlerted => _alert.IsActive;
 
         public long WaitFor(long sequence)
         {
-            CheckAlert();
+            _alert.Check();
 
-            var availableSequence = _waitStrategy.WaitFor(sequence, _cursorSequence, _dependentSequence, this);
+            var availableSequence = _waitStrategy.WaitFor(sequence, _cursorSequence, _dependentSequence, _alert);
 
             if (availableSequence < sequence)
                 return availableSequence;
@@ -42,29 +43,15 @@ namespace Disruptor
             return _sequencer.GetHighestPublishedSequence(sequence, availableSequence);
         }
 
-        public long Cursor => _dependentSequence.Value;
-
-        public bool IsAlerted => _alerted;
-
         public void Alert()
         {
-            _alerted = true;
+            _alert.Activate();
             _waitStrategy.SignalAllWhenBlocking();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ClearAlert()
         {
-            _alerted = false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CheckAlert()
-        {
-            if(_alerted)
-            {
-                AlertException.Throw();
-            }
+            _alert.Deactivate();
         }
     }
 }

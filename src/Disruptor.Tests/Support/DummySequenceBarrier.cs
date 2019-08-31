@@ -17,9 +17,5 @@
         public void ClearAlert()
         {
         }
-
-        public void CheckAlert()
-        {
-        }
     }
 }

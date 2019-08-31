@@ -275,11 +275,6 @@ namespace Disruptor.Tests
             {
                 _target.ClearAlert();
             }
-
-            public void CheckAlert()
-            {
-                _target.CheckAlert();
-            }
         }
 
         // ReSharper disable once MemberCanBePrivate.Global

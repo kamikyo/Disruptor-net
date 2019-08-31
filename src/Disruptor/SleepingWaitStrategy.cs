@@ -25,14 +25,14 @@ namespace Disruptor
         /// <summary>
         /// <see cref="IWaitStrategy.WaitFor"/>
         /// </summary>
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, ISequenceBarrier barrier)
+        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
             long availableSequence;
             int counter = _retries;
 
             while ((availableSequence = dependentSequence.Value) < sequence)
             {
-                counter = ApplyWaitMethod(barrier, counter);
+                counter = ApplyWaitMethod(alert, counter);
             }
 
             return availableSequence;
@@ -45,9 +45,9 @@ namespace Disruptor
         {
         }
 
-        private static int ApplyWaitMethod(ISequenceBarrier barrier, int counter)
+        private static int ApplyWaitMethod(SequenceBarrierAlert alert, int counter)
         {
-            barrier.CheckAlert();
+            alert.Check();
 
             if (counter > 100)
             {
