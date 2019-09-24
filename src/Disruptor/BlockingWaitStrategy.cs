@@ -14,7 +14,7 @@ namespace Disruptor
         /// <summary>
         /// <see cref="IWaitStrategy.WaitFor"/>
         /// </summary>
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
+        public WaitResult WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
             if (cursor.Value < sequence)
             {
@@ -22,7 +22,9 @@ namespace Disruptor
                 {
                     while (cursor.Value < sequence)
                     {
-                        alert.Check();
+                        if (alert.IsActive)
+                            return WaitResult.Cancel;
+
                         Monitor.Wait(_gate);
                     }
                 }
@@ -32,11 +34,13 @@ namespace Disruptor
             long availableSequence;
             while ((availableSequence = dependentSequence.Value) < sequence)
             {
-                alert.Check();
+                if (alert.IsActive)
+                    return WaitResult.Cancel;
+
                 aggressiveSpinWait.SpinOnce();
             }
 
-            return availableSequence;
+            return WaitResult.Success(availableSequence);
         }
 
         /// <summary>

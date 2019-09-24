@@ -102,18 +102,19 @@ namespace Disruptor
                     }
                     else
                     {
-                        cachedAvailableSequence = _sequenceBarrier.WaitFor(nextSequence);
-                    }
-                }
-                catch (TimeoutException)
-                {
-                    NotifyTimeout(_sequence.Value);
-                }
-                catch (AlertException)
-                {
-                    if (_running == 0)
-                    {
-                        break;
+                        var waitResult = _sequenceBarrier.WaitFor(nextSequence);
+                        if (waitResult.Type == WaitResultType.Success)
+                        {
+                            cachedAvailableSequence = waitResult.NextAvailableSequence;
+                        }
+                        else if (waitResult.Type == WaitResultType.Timeout)
+                        {
+                            NotifyTimeout(_sequence.Value);
+                        }
+                        else if (_running == 0)
+                        {
+                            break;
+                        }
                     }
                 }
                 catch (Exception ex)

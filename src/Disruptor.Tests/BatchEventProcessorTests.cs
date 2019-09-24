@@ -255,9 +255,9 @@ namespace Disruptor.Tests
                 _target = target;
             }
 
-            public long WaitFor(long sequence)
+            public WaitResult WaitFor(long sequence)
             {
-                var result = _suppress ? sequence - 1 : _target.WaitFor(sequence);
+                var result = _suppress ? WaitResult.Success(sequence - 1) : _target.WaitFor(sequence);
                 _suppress = !_suppress;
                 return result;
             }

@@ -20,9 +20,11 @@ namespace Disruptor.Tests
 
             var stopwatch = Stopwatch.StartNew();
 
-            Assert.Throws<TimeoutException>(() => waitStrategy.WaitFor(6, cursor, dependent, alert));
+            var result = waitStrategy.WaitFor(6, cursor, dependent, alert);
 
             stopwatch.Stop();
+
+            Assert.That(result.Type, Is.EqualTo(WaitResultType.Timeout));
 
             // Required to make the test pass on azure pipelines.
             var tolerance = TimeSpan.FromMilliseconds(25);

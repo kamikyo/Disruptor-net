@@ -2,9 +2,9 @@
 {
     public class DummySequenceBarrier : ISequenceBarrier
     {
-        public long WaitFor(long sequence)
+        public WaitResult WaitFor(long sequence)
         {
-            return 0;
+            return WaitResult.Success(default);
         }
 
         public long Cursor => 0;

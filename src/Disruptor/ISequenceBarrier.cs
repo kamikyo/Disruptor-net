@@ -11,9 +11,7 @@
         /// </summary>
         /// <param name="sequence">sequence to wait for</param>
         /// <returns>the sequence up to which is available</returns>
-        /// <exception cref="AlertException">if a status change has occurred for the Disruptor</exception>
-        /// <exception cref="TimeoutException">if a timeout occurs while waiting for the supplied sequence.</exception>
-        long WaitFor(long sequence);
+        WaitResult WaitFor(long sequence);
 
         /// <summary>
         /// Delegate a call to the <see cref="Sequencer.Cursor"/>

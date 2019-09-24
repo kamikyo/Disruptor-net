@@ -36,7 +36,7 @@ namespace Disruptor.Tests
             oldEvent.Copy(expectedEvent);
             _ringBuffer.Publish(claimSequence);
 
-            var sequence = _sequenceBarrier.WaitFor(0);
+            var sequence = _sequenceBarrier.GetWaitResultOrThrow(0);
             Assert.AreEqual(0, sequence);
 
             var evt = _ringBuffer[sequence];
@@ -84,7 +84,7 @@ namespace Disruptor.Tests
             }
 
             var expectedSequence = numEvents - 1;
-            var available = _sequenceBarrier.WaitFor(expectedSequence);
+            var available = _sequenceBarrier.GetWaitResultOrThrow(expectedSequence);
             Assert.AreEqual(expectedSequence, available);
 
             for (var i = 0; i < numEvents; i++)
@@ -107,7 +107,7 @@ namespace Disruptor.Tests
             }
 
             var expectedSequence = numEvents + offset - 1;
-            var available = _sequenceBarrier.WaitFor(expectedSequence);
+            var available = _sequenceBarrier.GetWaitResultOrThrow(expectedSequence);
             Assert.AreEqual(expectedSequence, available);
 
             for (var i = offset; i < numEvents + offset; i++)

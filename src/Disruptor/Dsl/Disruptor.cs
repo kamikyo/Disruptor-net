@@ -321,7 +321,7 @@ namespace Disruptor.Dsl
             {
                 Shutdown(TimeSpan.FromMilliseconds(-1)); // do not wait
             }
-            catch (TimeoutException e)
+            catch (Exception e)
             {
                 _exceptionHandler.HandleOnShutdownException(e);
             }
@@ -335,19 +335,33 @@ namespace Disruptor.Dsl
         /// processor threads
         /// </summary>
         /// <param name="timeout">the amount of time to wait for all events to be processed. <code>TimeSpan.MaxValue</code> will give an infinite timeout</param>
-        /// <exception cref="TimeoutException">if a timeout occurs before shutdown completes.</exception>
+        /// <exception cref="System.TimeoutException">if a timeout occurs before shutdown completes.</exception>
         public void Shutdown(TimeSpan timeout)
+        {
+            if (!TryShutdown(timeout))
+                throw new System.TimeoutException();
+        }
+
+        /// <summary>
+        /// Waits until all events currently in the disruptor have been processed by all event processors
+        /// and then halts the processors.
+        /// 
+        /// This method will not shutdown the executor, nor will it await the final termination of the
+        /// processor threads
+        /// </summary>
+        /// <param name="timeout">the amount of time to wait for all events to be processed. <code>TimeSpan.MaxValue</code> will give an infinite timeout</param>
+        public bool TryShutdown(TimeSpan timeout)
         {
             var timeoutAt = DateTime.UtcNow.Add(timeout);
             while (HasBacklog())
             {
                 if (timeout.Ticks >= 0 && DateTime.UtcNow > timeoutAt)
-                {
-                    throw TimeoutException.Instance;
-                }
+                    return false;
                 // Busy spin
             }
+
             Halt();
+            return true;
         }
 
         /// <summary>

@@ -151,26 +151,27 @@ namespace Disruptor
             {
                 try
                 {
-                    var availableSequence = _sequenceBarrier.WaitFor(nextSequence);
-
-                    _batchStartAware.OnBatchStart(availableSequence - nextSequence + 1);
-
-                    while (nextSequence <= availableSequence)
+                    var waitResult = _sequenceBarrier.WaitFor(nextSequence);
+                    if (waitResult.Type == WaitResultType.Success)
                     {
-                        ref T evt = ref _dataProvider[nextSequence];
-                        _eventHandler.OnEvent(ref evt, nextSequence, nextSequence == availableSequence);
-                        nextSequence++;
-                    }
+                        var availableSequence = waitResult.NextAvailableSequence;
 
-                    _sequence.SetValue(availableSequence);
-                }
-                catch (TimeoutException)
-                {
-                    NotifyTimeout(_sequence.Value);
-                }
-                catch (AlertException)
-                {
-                    if (_running != RunningStates.Running)
+                        _batchStartAware.OnBatchStart(availableSequence - nextSequence + 1);
+
+                        while (nextSequence <= availableSequence)
+                        {
+                            ref T evt = ref _dataProvider[nextSequence];
+                            _eventHandler.OnEvent(ref evt, nextSequence, nextSequence == availableSequence);
+                            nextSequence++;
+                        }
+
+                        _sequence.SetValue(availableSequence);
+                    }
+                    else if (waitResult.Type == WaitResultType.Timeout)
+                    {
+                        NotifyTimeout(_sequence.Value);
+                    }
+                    else if (_running != RunningStates.Running)
                     {
                         break;
                     }

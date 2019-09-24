@@ -607,6 +607,21 @@ namespace Disruptor.Tests.Dsl
         }
 
         [Test]
+        public void ShouldReturnFalseIfTryShutdownDoesNotCompleteNormally()
+        {
+            //Given
+            var delayedEventHandler = CreateDelayedEventHandler();
+            _disruptor.HandleEventsWith(delayedEventHandler);
+            PublishEvent();
+
+            //When
+            var result = _disruptor.TryShutdown(TimeSpan.FromSeconds(1));
+
+            //Then
+            Assert.AreEqual(false, result);
+        }
+
+        [Test]
         public void ShouldTrackRemainingCapacity()
         {
             long[] remainingCapacity = { -1 };

@@ -67,7 +67,7 @@ namespace Disruptor
         /// <summary>
         /// <see cref="IWaitStrategy.WaitFor"/>
         /// </summary>
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
+        public WaitResult WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
             long startTime = 0;
             int counter = _spinTries;
@@ -76,7 +76,7 @@ namespace Disruptor
             {
                 long availableSequence;
                 if ((availableSequence = dependentSequence.Value) >= sequence)
-                    return availableSequence;
+                    return WaitResult.Success(availableSequence);
 
                 if (0 == --counter)
                 {

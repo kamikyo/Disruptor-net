@@ -42,41 +42,35 @@ namespace Disruptor.PerfTests.Support
 
             while (true)
             {
-                try
+                for (var i = 0; i < barrierLength; i++)
                 {
-                    for (var i = 0; i < barrierLength; i++)
+                    var waitResult = _barriers[i].WaitFor(-1);
+                    if (waitResult.Type == WaitResultType.Cancel)
                     {
-                        var available = _barriers[i].WaitFor(-1);
-                        var sequence = _sequences[i];
-
-                        var nextSequence = sequence.Value + 1;
-
-                        for (var l = nextSequence; l <= available; l++)
-                        {
-                            _handler.OnEvent(_providers[i][l], l, l == available);
-                        }
-
-                        sequence.SetValue(available);
-
-                        _count += available - nextSequence + 1;
+                        if (_isRunning == 0)
+                            break;
+                    }
+                    else if (waitResult.Type == WaitResultType.Timeout)
+                    {
+                        continue;
                     }
 
-                    Thread.Yield();
+                    var available = waitResult.NextAvailableSequence;
+                    var sequence = _sequences[i];
+
+                    var nextSequence = sequence.Value + 1;
+
+                    for (var l = nextSequence; l <= available; l++)
+                    {
+                        _handler.OnEvent(_providers[i][l], l, l == available);
+                    }
+
+                    sequence.SetValue(available);
+
+                    _count += available - nextSequence + 1;
                 }
-                catch (AlertException)
-                {
-                    if (_isRunning == 0)
-                        break;
-                }
-                catch (TimeoutException e)
-                {
-                    Console.WriteLine(e);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    break;
-                }
+
+                Thread.Yield();
             }
         }
 

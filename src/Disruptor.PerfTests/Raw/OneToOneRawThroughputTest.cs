@@ -126,7 +126,7 @@ namespace Disruptor.PerfTests.Raw
                     long processed;
                     do
                     {
-                        processed = _barrier.WaitFor(Sequence.Value + 1);
+                        processed = _barrier.WaitFor(Sequence.Value + 1).NextAvailableSequence;
                         Sequence.SetValue(processed);
                     }
                     while (processed < expected);

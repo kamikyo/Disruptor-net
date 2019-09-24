@@ -25,19 +25,6 @@ namespace Disruptor
         }
 
         /// <summary>
-        /// Check if an alert has been raised and throw an <see cref="AlertException"/> if it has.
-        /// </summary>
-        /// <exception cref="AlertException">if alert has been raised.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Check()
-        {
-            if (_isActive)
-            {
-                AlertException.Throw();
-            }
-        }
-
-        /// <summary>
         /// Indicates whether the alert is associated to the specified <see cref="ISequenceBarrier"/>.
         /// Can be used by a <see cref="IWaitStrategy"/> to identify the current sequence barrier.
         /// </summary>

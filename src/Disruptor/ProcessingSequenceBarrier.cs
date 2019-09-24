@@ -31,16 +31,17 @@ namespace Disruptor
         public long Cursor => _dependentSequence.Value;
         public bool IsAlerted => _alert.IsActive;
 
-        public long WaitFor(long sequence)
+        public WaitResult WaitFor(long sequence)
         {
-            _alert.Check();
+            if (_alert.IsActive)
+                return WaitResult.Cancel;
 
-            var availableSequence = _waitStrategy.WaitFor(sequence, _cursorSequence, _dependentSequence, _alert);
+            var waitResult = _waitStrategy.WaitFor(sequence, _cursorSequence, _dependentSequence, _alert);
+            if (waitResult.Type != WaitResultType.Success || waitResult.NextAvailableSequence < sequence)
+                return waitResult;
 
-            if (availableSequence < sequence)
-                return availableSequence;
-
-            return _sequencer.GetHighestPublishedSequence(sequence, availableSequence);
+            var highestPublishedSequence = _sequencer.GetHighestPublishedSequence(sequence, waitResult.NextAvailableSequence);
+            return WaitResult.Success(highestPublishedSequence);
         }
 
         public void Alert()

@@ -31,7 +31,7 @@ namespace Disruptor.Tests
 
             var sequenceBarrier = _ringBuffer.NewBarrier(sequence1, sequence2, sequence3);
 
-            var completedWorkSequence = sequenceBarrier.WaitFor(expectedWorkSequence);
+            var completedWorkSequence = sequenceBarrier.GetWaitResultOrThrow(expectedWorkSequence);
             Assert.IsTrue(completedWorkSequence >= expectedWorkSequence);
         }
 
@@ -62,7 +62,7 @@ namespace Disruptor.Tests
                     });
 
             const long expectedWorkSequence = expectedNumberMessages;
-            var completedWorkSequence = dependencyBarrier.WaitFor(expectedNumberMessages);
+            var completedWorkSequence = dependencyBarrier.GetWaitResultOrThrow(expectedNumberMessages);
             Assert.IsTrue(completedWorkSequence >= expectedWorkSequence);
         }
 
@@ -81,16 +81,10 @@ namespace Disruptor.Tests
 
             var alerted = false;
             var t = Task.Run(() =>
-                            {
-                                try
-                                {
-                                    sequenceBarrier.WaitFor(expectedNumberMessages - 1);
-                                }
-                                catch (AlertException)
-                                {
-                                    alerted = true;
-                                }
-                            });
+            {
+                var waitResult = sequenceBarrier.WaitFor(expectedNumberMessages - 1);
+                alerted = waitResult.Type == WaitResultType.Cancel;
+            });
 
             signal.Wait(TimeSpan.FromSeconds(3));
             sequenceBarrier.Alert();
@@ -122,7 +116,7 @@ namespace Disruptor.Tests
                                   }).Wait();
 
             const long expectedWorkSequence = expectedNumberMessages - 1;
-            var completedWorkSequence = eventProcessorBarrier.WaitFor(expectedWorkSequence);
+            var completedWorkSequence = eventProcessorBarrier.GetWaitResultOrThrow(expectedWorkSequence);
             Assert.IsTrue(completedWorkSequence >= expectedWorkSequence);
         }
 

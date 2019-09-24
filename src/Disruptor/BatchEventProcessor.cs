@@ -198,33 +198,34 @@ namespace Disruptor
             {
                 try
                 {
-                    var availableSequence = _sequenceBarrier.WaitFor(nextSequence);
-
-                    // WaitFor can return a value lower than nextSequence, for example when using a MultiProducerSequencer.
-                    // The Java version includes the test "if (availableSequence >= nextSequence)" to avoid invoking OnBatchStart on empty batches.
-                    // However, this test has a negative impact on performance even for event handlers that are not IBatchStartAware.
-                    // This is unfortunate because this test should be removed by the JIT when OnBatchStart is a noop.
-                    // => The test is currently implemented on struct proxies. See BatchEventProcessor<T>.BatchStartAware and StructProxy.
-                    // For some reason this also improves BatchEventProcessor performance for IBatchStartAware event handlers.
-
-                    _batchStartAware.OnBatchStart(availableSequence - nextSequence + 1);
-
-                    while (nextSequence <= availableSequence)
+                    var waitResult = _sequenceBarrier.WaitFor(nextSequence);
+                    if (waitResult.Type == WaitResultType.Success)
                     {
-                        evt = _dataProvider[nextSequence];
-                        _eventHandler.OnEvent(evt, nextSequence, nextSequence == availableSequence);
-                        nextSequence++;
-                    }
+                        var availableSequence = waitResult.NextAvailableSequence;
 
-                    _sequence.SetValue(availableSequence);
-                }
-                catch (TimeoutException)
-                {
-                    NotifyTimeout(_sequence.Value);
-                }
-                catch (AlertException)
-                {
-                    if (_running != RunningStates.Running)
+                        // WaitFor can return a value lower than nextSequence, for example when using a MultiProducerSequencer.
+                        // The Java version includes the test "if (availableSequence >= nextSequence)" to avoid invoking OnBatchStart on empty batches.
+                        // However, this test has a negative impact on performance even for event handlers that are not IBatchStartAware.
+                        // This is unfortunate because this test should be removed by the JIT when OnBatchStart is a noop.
+                        // => The test is currently implemented on struct proxies. See BatchEventProcessor<T>.BatchStartAware and StructProxy.
+                        // For some reason this also improves BatchEventProcessor performance for IBatchStartAware event handlers.
+
+                        _batchStartAware.OnBatchStart(availableSequence - nextSequence + 1);
+
+                        while (nextSequence <= availableSequence)
+                        {
+                            evt = _dataProvider[nextSequence];
+                            _eventHandler.OnEvent(evt, nextSequence, nextSequence == availableSequence);
+                            nextSequence++;
+                        }
+
+                        _sequence.SetValue(availableSequence);
+                    }
+                    else if (waitResult.Type == WaitResultType.Timeout)
+                    {
+                        NotifyTimeout(_sequence.Value);
+                    }
+                    else if(_running != RunningStates.Running)
                     {
                         break;
                     }

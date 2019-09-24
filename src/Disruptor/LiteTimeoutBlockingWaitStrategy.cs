@@ -24,7 +24,7 @@ namespace Disruptor
         /// <summary>
         /// <see cref="IWaitStrategy.WaitFor"/>.
         /// </summary>
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
+        public WaitResult WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
             var milliseconds = _timeoutInMilliseconds;
 
@@ -37,12 +37,11 @@ namespace Disruptor
                     {
                         Interlocked.Exchange(ref _signalNeeded, 1);
 
-                        alert.Check();
+                        if (alert.IsActive)
+                            return WaitResult.Cancel;
 
                         if (!Monitor.Wait(_lock, milliseconds))
-                        {
-                            throw TimeoutException.Instance;
-                        }
+                            return WaitResult.Timeout;
                     }
                 }
             }
@@ -50,11 +49,13 @@ namespace Disruptor
             var aggressiveSpinWait = new AggressiveSpinWait();
             while ((availableSequence = dependentSequence.Value) < sequence)
             {
-                alert.Check();
+                if (alert.IsActive)
+                    return WaitResult.Cancel;
+
                 aggressiveSpinWait.SpinOnce();
             }
 
-            return availableSequence;
+            return WaitResult.Success(availableSequence);
         }
 
         /// <summary>

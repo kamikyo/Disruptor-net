@@ -4,9 +4,9 @@
     {
         public int SignalAllWhenBlockingCalls { get; private set; }
 
-        public long WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
+        public WaitResult WaitFor(long sequence, Sequence cursor, ISequence dependentSequence, SequenceBarrierAlert alert)
         {
-            return 0;
+            return WaitResult.Success(default);
         }
 
         public void SignalAllWhenBlocking()
