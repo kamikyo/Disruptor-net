@@ -33,11 +33,8 @@ namespace Disruptor
 
         public WaitResult WaitFor(long sequence)
         {
-            if (_alert.IsActive)
-                return WaitResult.Cancel;
-
             var waitResult = _waitStrategy.WaitFor(sequence, _cursorSequence, _dependentSequence, _alert);
-            if (waitResult.Type != WaitResultType.Success || waitResult.NextAvailableSequence < sequence)
+            if (waitResult.NextAvailableSequence < sequence)
                 return waitResult;
 
             var highestPublishedSequence = _sequencer.GetHighestPublishedSequence(sequence, waitResult.NextAvailableSequence);

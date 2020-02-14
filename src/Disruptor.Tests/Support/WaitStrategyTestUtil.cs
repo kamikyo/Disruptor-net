@@ -26,10 +26,10 @@ namespace Disruptor.Tests.Support
 
         public static long GetResultOrThrow(this WaitResult waitResult)
         {
-            if (waitResult.Type != WaitResultType.Success)
+            if (!waitResult.TryGetSequence(out var sequence))
                 throw new Exception();
 
-            return waitResult.NextAvailableSequence;
+            return sequence;
         }
     }
 }

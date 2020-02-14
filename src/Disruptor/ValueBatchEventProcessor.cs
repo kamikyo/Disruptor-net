@@ -6,7 +6,7 @@ namespace Disruptor
     /// <summary>
     /// Convenience class for handling the batching semantics of consuming events from a <see cref="ValueRingBuffer{T}"/>
     /// and delegating the available events to an <see cref="IValueEventHandler{T}"/>.
-    /// 
+    ///
     /// If the <see cref="IValueEventHandler{T}"/> also implements <see cref="ILifecycleAware"/> it will be notified just after the thread
     /// is started and just before the thread is shutdown.
     /// </summary>
@@ -46,7 +46,7 @@ namespace Disruptor
         /// <summary>
         /// Construct a BatchEventProcessor that will automatically track the progress by updating its sequence when
         /// the <see cref="IValueEventHandler{T}.OnEvent"/> method returns.
-        /// 
+        ///
         /// Consider using <see cref="BatchEventProcessorFactory"/> to create your <see cref="IEventProcessor"/>.
         /// </summary>
         /// <param name="dataProvider">dataProvider to which events are published</param>
@@ -152,10 +152,8 @@ namespace Disruptor
                 try
                 {
                     var waitResult = _sequenceBarrier.WaitFor(nextSequence);
-                    if (waitResult.Type == WaitResultType.Success)
+                    if (waitResult.TryGetSequence(out var availableSequence))
                     {
-                        var availableSequence = waitResult.NextAvailableSequence;
-
                         _batchStartAware.OnBatchStart(availableSequence - nextSequence + 1);
 
                         while (nextSequence <= availableSequence)
@@ -167,7 +165,7 @@ namespace Disruptor
 
                         _sequence.SetValue(availableSequence);
                     }
-                    else if (waitResult.Type == WaitResultType.Timeout)
+                    else if (waitResult == WaitResult.Timeout)
                     {
                         NotifyTimeout(_sequence.Value);
                     }

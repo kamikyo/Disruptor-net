@@ -45,12 +45,12 @@ namespace Disruptor.PerfTests.Support
                 for (var i = 0; i < barrierLength; i++)
                 {
                     var waitResult = _barriers[i].WaitFor(-1);
-                    if (waitResult.Type == WaitResultType.Cancel)
+                    if (waitResult == WaitResult.Cancel)
                     {
                         if (_isRunning == 0)
                             break;
                     }
-                    else if (waitResult.Type == WaitResultType.Timeout)
+                    else if (waitResult == WaitResult.Timeout)
                     {
                         continue;
                     }
@@ -74,7 +74,7 @@ namespace Disruptor.PerfTests.Support
             }
         }
 
-        
+
 
         public ISequence Sequence { get { throw new NotSupportedException(); } }
 

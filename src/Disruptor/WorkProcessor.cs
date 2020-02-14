@@ -5,11 +5,11 @@ namespace Disruptor
 {
     /// <summary>
     /// A <see cref="WorkProcessor{T}"/> wraps a single <see cref="IWorkHandler{T}"/>, effectively consuming the sequence and ensuring appropriate barriers.
-    /// 
+    ///
     /// Generally, this will be used as part of a <see cref="WorkerPool{T}"/>.
     /// </summary>
     /// <typeparam name="T">event implementation storing the details for the work to processed.</typeparam>
-    public sealed class WorkProcessor<T> : IEventProcessor where T : class 
+    public sealed class WorkProcessor<T> : IEventProcessor where T : class
     {
         private volatile int _running;
         private readonly Sequence _sequence = new Sequence();
@@ -103,11 +103,11 @@ namespace Disruptor
                     else
                     {
                         var waitResult = _sequenceBarrier.WaitFor(nextSequence);
-                        if (waitResult.Type == WaitResultType.Success)
+                        if (waitResult.TryGetSequence(out var nextAvailableSequence))
                         {
-                            cachedAvailableSequence = waitResult.NextAvailableSequence;
+                            cachedAvailableSequence = nextAvailableSequence;
                         }
-                        else if (waitResult.Type == WaitResultType.Timeout)
+                        else if (waitResult == WaitResult.Timeout)
                         {
                             NotifyTimeout(_sequence.Value);
                         }

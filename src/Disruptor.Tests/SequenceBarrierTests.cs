@@ -83,7 +83,7 @@ namespace Disruptor.Tests
             var t = Task.Run(() =>
             {
                 var waitResult = sequenceBarrier.WaitFor(expectedNumberMessages - 1);
-                alerted = waitResult.Type == WaitResultType.Cancel;
+                alerted = waitResult == WaitResult.Cancel;
             });
 
             signal.Wait(TimeSpan.FromSeconds(3));
