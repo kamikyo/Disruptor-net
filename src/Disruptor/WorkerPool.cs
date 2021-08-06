@@ -139,6 +139,35 @@ namespace Disruptor
         }
 
         /// <summary>
+        /// Start the worker pool processing events in sequence.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">if the pool is already started or halted</exception>
+        public async Task<RingBuffer<T>> StartAsync()
+        {
+            var previousRunState = Interlocked.CompareExchange(ref _runState, ProcessorRunStates.Running, ProcessorRunStates.Idle);
+            if (previousRunState == ProcessorRunStates.Running)
+            {
+                throw new InvalidOperationException("WorkerPool is already running");
+            }
+
+            if (previousRunState == ProcessorRunStates.Halted)
+            {
+                throw new InvalidOperationException("WorkerPool is halted and cannot be restarted");
+            }
+
+            var cursor = _ringBuffer.Cursor;
+            _workSequence.SetValue(cursor);
+
+            foreach (var workProcessor in _workProcessors)
+            {
+                workProcessor.Sequence.SetValue(cursor);
+                await workProcessor.StartAsync();
+            }
+
+            return _ringBuffer;
+        }
+
+        /// <summary>
         /// Wait for the <see cref="RingBuffer{T}"/> to drain of published events then halt the workers.
         /// </summary>
         public void DrainAndHalt()

@@ -162,6 +162,17 @@ namespace Disruptor.Dsl
             return _ringBuffer;
         }
 
+        public async Task<TRingBuffer> StartAsync()
+        {
+            CheckOnlyStartedOnce();
+            foreach (var consumerInfo in _consumerRepository)
+            {
+                await consumerInfo.StartAsync();
+            }
+
+            return _ringBuffer;
+        }
+
         /// <summary>
         /// Calls <see cref="IEventProcessor.Halt"/> on all of the event processors created via this disruptor.
         /// </summary>

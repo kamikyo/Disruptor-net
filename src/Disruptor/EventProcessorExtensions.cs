@@ -14,5 +14,10 @@ namespace Disruptor
         {
             return Task.Factory.StartNew(eventProcessor.Run, CancellationToken.None, TaskCreationOptions.LongRunning, taskScheduler);
         }
+
+        public static async Task StartAsync(this IEventProcessor eventProcessor)
+        {
+            await eventProcessor.RunAsync();
+        }
     }
 }

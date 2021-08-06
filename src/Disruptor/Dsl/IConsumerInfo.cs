@@ -12,6 +12,8 @@ namespace Disruptor.Dsl
 
         void Start(TaskScheduler taskScheduler);
 
+        Task StartAsync();
+
         void Halt();
 
         void MarkAsUsedInBarrier();

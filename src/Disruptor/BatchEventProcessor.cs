@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Disruptor
 {
@@ -232,6 +233,56 @@ namespace Disruptor
             }
         }
 
+        [MethodImpl(Constants.AggressiveOptimization)]
+        private async Task ProcessEventsAsync()
+        {
+            var nextSequence = _sequence.Value + 1L;
+
+            while (true)
+            {
+                try
+                {
+                    var availableSequence = _sequenceBarrier.WaitFor(nextSequence);
+
+                    // WaitFor can return a value lower than nextSequence, for example when using a MultiProducerSequencer.
+                    // The Java version includes the test "if (availableSequence >= nextSequence)" to avoid invoking OnBatchStart on empty batches.
+                    // However, this test has a negative impact on performance even for event handlers that are not IBatchStartAware.
+                    // This is unfortunate because this test should be removed by the JIT when OnBatchStart is a noop.
+                    // => The test is currently implemented on struct proxies. See BatchEventProcessor<T>.BatchStartAware and StructProxy.
+                    // For some reason this also improves BatchEventProcessor performance for IBatchStartAware event handlers.
+
+                    _batchStartAware.OnBatchStart(availableSequence - nextSequence + 1);
+
+                    while (nextSequence <= availableSequence)
+                    {
+                        var evt = _dataProvider[nextSequence];
+                        await _eventHandler.OnEventAsync(evt, nextSequence, nextSequence == availableSequence);
+                        nextSequence++;
+                    }
+
+                    _sequence.SetValue(availableSequence);
+                }
+                catch (TimeoutException)
+                {
+                    NotifyTimeout(_sequence.Value);
+                }
+                catch (AlertException)
+                {
+                    if (_runState != ProcessorRunStates.Running)
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var evt = _dataProvider[nextSequence];
+                    _exceptionHandler.HandleEventException(ex, nextSequence, evt);
+                    _sequence.SetValue(nextSequence);
+                    nextSequence++;
+                }
+            }
+        }
+
         private void EarlyExit()
         {
             NotifyStart();
@@ -290,6 +341,41 @@ namespace Disruptor
             }
 
             _started.Reset();
+        }
+
+        public async Task RunAsync()
+        {
+#pragma warning disable 420
+            var previousRunning = Interlocked.CompareExchange(ref _runState, ProcessorRunStates.Running, ProcessorRunStates.Idle);
+#pragma warning restore 420
+
+            if (previousRunning == ProcessorRunStates.Running)
+            {
+                throw new InvalidOperationException("Thread is already running");
+            }
+
+            if (previousRunning == ProcessorRunStates.Idle)
+            {
+                _sequenceBarrier.ClearAlert();
+
+                NotifyStart();
+                try
+                {
+                    if (_runState == ProcessorRunStates.Running)
+                    {
+                        await ProcessEventsAsync();
+                    }
+                }
+                finally
+                {
+                    NotifyShutdown();
+                    _runState = ProcessorRunStates.Idle;
+                }
+            }
+            else
+            {
+                EarlyExit();
+            }
         }
     }
 }

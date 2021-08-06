@@ -34,6 +34,11 @@ namespace Disruptor.Dsl
             IsEndOfChain = false;
         }
 
+        public async Task StartAsync()
+        {
+            await _workerPool.StartAsync();
+        }
+
         public bool IsRunning => _workerPool.IsRunning;
     }
 }

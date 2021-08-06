@@ -1,4 +1,6 @@
-﻿namespace Disruptor
+﻿using System.Threading.Tasks;
+
+namespace Disruptor
 {
     /// <summary>
     /// An IEventProcessor needs to poll for events from the <see cref="RingBuffer{T}"/>
@@ -23,6 +25,8 @@
         /// Starts this instance 
         /// </summary>
         void Run();
+
+        Task RunAsync();
 
         /// <summary>
         /// Gets if the processor is running
