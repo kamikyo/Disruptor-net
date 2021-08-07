@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace Disruptor
 {
     /// <summary>
@@ -51,6 +53,15 @@ namespace Disruptor
             foreach (var eventHandler in _eventHandlers)
             {
                 (eventHandler as ILifecycleAware)?.OnShutdown();
+            }
+        }
+
+        public async Task OnEventAsync(T data, long sequence, bool endOfBatch)
+        {
+            // for loop instead of foreach in order to avoid bound checks, we're here in the critical path
+            for (var i = 0; i < _eventHandlers.Length; i++)
+            {
+                await _eventHandlers[i].OnEventAsync(data, sequence, endOfBatch);
             }
         }
     }

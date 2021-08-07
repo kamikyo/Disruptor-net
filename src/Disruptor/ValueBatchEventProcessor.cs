@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Disruptor
 {
@@ -188,6 +189,50 @@ namespace Disruptor
             }
         }
 
+        [MethodImpl(Constants.AggressiveOptimization)]
+        private async Task ProcessEventsAsync()
+        {
+            var nextSequence = _sequence.Value + 1L;
+
+            while (true)
+            {
+                try
+                {
+                    var availableSequence = _sequenceBarrier.WaitFor(nextSequence);
+
+                    _batchStartAware.OnBatchStart(availableSequence - nextSequence + 1);
+
+                    while (nextSequence <= availableSequence)
+                    {
+                        T evt = _dataProvider[nextSequence];
+                        await _eventHandler.OnEventAsync(ref evt, nextSequence, nextSequence == availableSequence);
+                        nextSequence++;
+                    }
+
+                    _sequence.SetValue(availableSequence);
+                }
+                catch (TimeoutException)
+                {
+                    NotifyTimeout(_sequence.Value);
+                }
+                catch (AlertException)
+                {
+                    if (_running != RunningStates.Running)
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    T evt = _dataProvider[nextSequence];
+
+                    _exceptionHandler.HandleEventException(ex, nextSequence, ref evt);
+                    _sequence.SetValue(nextSequence);
+                    nextSequence++;
+                }
+            }
+        }
+
         private void EarlyExit()
         {
             NotifyStart();
@@ -246,6 +291,41 @@ namespace Disruptor
             }
 
             _started.Reset();
+        }
+
+        public async Task RunAsync()
+        {
+#pragma warning disable 420
+            var previousRunning = Interlocked.CompareExchange(ref _running, RunningStates.Running, RunningStates.Idle);
+#pragma warning restore 420
+
+            if (previousRunning == RunningStates.Running)
+            {
+                throw new InvalidOperationException("Thread is already running");
+            }
+
+            if (previousRunning == RunningStates.Idle)
+            {
+                _sequenceBarrier.ClearAlert();
+
+                NotifyStart();
+                try
+                {
+                    if (_running == RunningStates.Running)
+                    {
+                        await ProcessEventsAsync();
+                    }
+                }
+                finally
+                {
+                    NotifyShutdown();
+                    _running = RunningStates.Idle;
+                }
+            }
+            else
+            {
+                EarlyExit();
+            }
         }
     }
 }

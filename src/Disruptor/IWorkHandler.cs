@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace Disruptor
 {
     /// <summary>
@@ -11,6 +13,7 @@ namespace Disruptor
         /// Callback to indicate a unit of work needs to be processed.
         /// </summary>
         /// <param name="evt">event published to the <see cref="RingBuffer{T}"/></param>
-        void OnEvent(T evt);   
+        void OnEvent(T evt);
+        Task OnEventAsync(T evt);
     }
 }

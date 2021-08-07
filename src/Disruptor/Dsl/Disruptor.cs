@@ -233,12 +233,12 @@ namespace Disruptor.Dsl
             return _ringBuffer;
         }
 
-        public async Task<RingBuffer<T>> StartAsync()
+        public RingBuffer<T> StartAsync()
         {
             CheckOnlyStartedOnce();
             foreach (var consumerInfo in _consumerRepository)
             {
-                await consumerInfo.StartAsync();
+                consumerInfo.StartAsync();
             }
 
             return _ringBuffer;

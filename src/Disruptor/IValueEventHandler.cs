@@ -1,4 +1,6 @@
-﻿namespace Disruptor
+﻿using System.Threading.Tasks;
+
+namespace Disruptor
 {
     /// <summary>
     /// Callback interface to be implemented for processing events as they become available in the <see cref="ValueRingBuffer{T}"/>
@@ -20,5 +22,7 @@
         /// <param name="sequence">Sequence number committed to the <see cref="ValueRingBuffer{T}"/></param>
         /// <param name="endOfBatch">flag to indicate if this is the last event in a batch from the <see cref="ValueRingBuffer{T}"/></param>
         void OnEvent(ref T data, long sequence, bool endOfBatch);
+
+        Task OnEventAsync(ref T data, long sequence, bool endOfBatch);
     }
 }

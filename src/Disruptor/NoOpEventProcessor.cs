@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Disruptor
 {
@@ -43,6 +44,15 @@ namespace Disruptor
         public void Halt()
         {
             _running = 0;
+        }
+
+        public Task RunAsync()
+        {
+            if (Interlocked.Exchange(ref _running, 1) != 0)
+            {
+                throw new InvalidOperationException("Thread is already running");
+            }
+            return Task.FromResult(0);
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Disruptor
 {
@@ -199,6 +200,91 @@ namespace Disruptor
                     _exceptionHandler.HandleOnShutdownException(ex);
                 }
             }
+        }
+
+        /// <summary>
+        /// <see cref="IEventProcessor.Run"/>.
+        /// </summary>
+        [MethodImpl(Constants.AggressiveOptimization)]
+        public async Task RunAsync()
+        {
+            var previousRunState = Interlocked.CompareExchange(ref _runState, ProcessorRunStates.Running, ProcessorRunStates.Idle);
+            if (previousRunState == ProcessorRunStates.Running)
+            {
+                throw new InvalidOperationException("WorkProcessor is already running");
+            }
+
+            if (previousRunState == ProcessorRunStates.Halted)
+            {
+                throw new InvalidOperationException("WorkProcessor is halted and cannot be restarted");
+            }
+
+            _sequenceBarrier.ClearAlert();
+
+            NotifyStart();
+
+            var processedSequence = true;
+            var cachedAvailableSequence = long.MinValue;
+            var nextSequence = _sequence.Value;
+            T eventRef = null;
+            while (true)
+            {
+                try
+                {
+                    // if previous sequence was processed - fetch the next sequence and set
+                    // that we have successfully processed the previous sequence
+                    // typically, this will be true
+                    // this prevents the sequence getting too far forward if an exception
+                    // is thrown from the WorkHandler
+
+                    if (processedSequence)
+                    {
+                        if (_runState != ProcessorRunStates.Running)
+                        {
+                            _sequenceBarrier.Alert();
+                            _sequenceBarrier.CheckAlert();
+                        }
+                        processedSequence = false;
+                        do
+                        {
+                            nextSequence = _workSequence.Value + 1L;
+                            _sequence.SetValue(nextSequence - 1L);
+                        }
+                        while (!_workSequence.CompareAndSet(nextSequence - 1L, nextSequence));
+                    }
+
+                    if (cachedAvailableSequence >= nextSequence)
+                    {
+                        eventRef = _ringBuffer[nextSequence];
+                        await _workHandler.OnEventAsync(eventRef);
+                        processedSequence = true;
+                    }
+                    else
+                    {
+                        cachedAvailableSequence = _sequenceBarrier.WaitFor(nextSequence);
+                    }
+                }
+                catch (TimeoutException)
+                {
+                    NotifyTimeout(_sequence.Value);
+                }
+                catch (AlertException)
+                {
+                    if (_runState != ProcessorRunStates.Running)
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _exceptionHandler.HandleEventException(ex, nextSequence, eventRef);
+                    processedSequence = true;
+                }
+            }
+
+            NotifyShutdown();
+
+            _runState = ProcessorRunStates.Halted;
         }
 
         private class EventReleaser : IEventReleaser
