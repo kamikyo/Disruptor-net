@@ -12,7 +12,7 @@ namespace Disruptor.Dsl
 
         void Start(TaskScheduler taskScheduler);
 
-        Task StartAsync();
+        void StartAsync(TaskScheduler taskScheduler);
 
         void Halt();
 

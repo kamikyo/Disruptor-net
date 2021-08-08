@@ -162,12 +162,12 @@ namespace Disruptor.Dsl
             return _ringBuffer;
         }
 
-        public async Task<TRingBuffer> StartAsync()
+        public TRingBuffer StartAsync()
         {
             CheckOnlyStartedOnce();
             foreach (var consumerInfo in _consumerRepository)
             {
-                await consumerInfo.StartAsync();
+                consumerInfo.StartAsync(_taskScheduler);
             }
 
             return _ringBuffer;

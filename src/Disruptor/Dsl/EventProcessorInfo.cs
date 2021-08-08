@@ -42,9 +42,9 @@ namespace Disruptor.Dsl
             IsEndOfChain = false;
         }
 
-        public Task StartAsync()
+        public void StartAsync(TaskScheduler taskScheduler)
         {
-            return EventProcessor.StartAsync();
+            EventProcessor.StartAsync(taskScheduler);
         }
 
         public bool IsRunning => EventProcessor.IsRunning;

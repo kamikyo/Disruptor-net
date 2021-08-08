@@ -238,7 +238,7 @@ namespace Disruptor.Dsl
             CheckOnlyStartedOnce();
             foreach (var consumerInfo in _consumerRepository)
             {
-                consumerInfo.StartAsync();
+                consumerInfo.StartAsync(_taskScheduler);
             }
 
             return _ringBuffer;
