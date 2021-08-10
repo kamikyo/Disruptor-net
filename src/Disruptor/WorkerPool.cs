@@ -142,7 +142,7 @@ namespace Disruptor
         /// Start the worker pool processing events in sequence.
         /// </summary>
         /// <exception cref="InvalidOperationException">if the pool is already started or halted</exception>
-        public RingBuffer<T> StartAsync(TaskScheduler taskScheduler)
+        public async Task<RingBuffer<T>> StartAsync(TaskScheduler taskScheduler)
         {
             var previousRunState = Interlocked.CompareExchange(ref _runState, ProcessorRunStates.Running, ProcessorRunStates.Idle);
             if (previousRunState == ProcessorRunStates.Running)
@@ -161,7 +161,7 @@ namespace Disruptor
             foreach (var workProcessor in _workProcessors)
             {
                 workProcessor.Sequence.SetValue(cursor);
-                workProcessor.StartAsync(taskScheduler);
+                await workProcessor.StartAsync(taskScheduler);
             }
 
             return _ringBuffer;

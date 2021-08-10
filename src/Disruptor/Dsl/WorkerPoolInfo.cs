@@ -34,9 +34,9 @@ namespace Disruptor.Dsl
             IsEndOfChain = false;
         }
 
-        public void StartAsync(TaskScheduler taskScheduler)
+        public async Task StartAsync(TaskScheduler taskScheduler)
         {
-            _workerPool.StartAsync(taskScheduler);
+            await _workerPool.StartAsync(taskScheduler);
         }
 
         public bool IsRunning => _workerPool.IsRunning;
